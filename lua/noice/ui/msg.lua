@@ -96,9 +96,11 @@ function M.on_show(event, kind, content, replace_last)
     return M.on_confirm(event, kind, content)
   end
 
-  if State.skip(event, kind, content, replace_last) then
-    return
-  end
+  -- Dedup of consecutive identical msg_show events is delegated to the
+  -- routes layer (where `replace=true, merge=true` refreshes an existing
+  -- toast for duplicates). Dropping events here is visibility-unaware:
+  -- a second `:badcmd` or `:set scrolloff?` typed after the first toast
+  -- has already faded would otherwise be silently swallowed.
 
   if M.last and replace_last then
     Manager.clear({ message = M.last })
@@ -159,9 +161,11 @@ end
 
 ---@param content NoiceChunk[]
 function M.on_confirm(event, kind, content)
-  if State.skip(event, kind, content) then
-    return
-  end
+  -- Same rationale as on_show: skipping a repeated confirm here would
+  -- wrongly silence the SECOND `:q` on a modified buffer (same E37
+  -- content as the first), so the cmdline_show that follows falls
+  -- through to the regular cmdline view as a bottom-row "[Y]es, (N)o,
+  -- (C)ancel:" prompt without the question.
   local prev = Manager.get({ event = event, kind = kind }, { history = true })[1]
   if prev then
     Manager.remove(prev)
