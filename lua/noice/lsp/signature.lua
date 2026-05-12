@@ -111,8 +111,16 @@ M.on_signature = Util.protect(M.on_signature)
 function M.check()
   local buf = vim.api.nvim_get_current_buf()
   local client = vim.lsp.get_clients({ bufnr = buf, method = "textDocument/signatureHelp" })[1]
-  local chars = client and client.server_capabilities.signatureHelpProvider.triggerCharacters or nil --[[@as string[]?]]
-  if not (client and chars and #chars > 0) then
+  -- Include retriggerCharacters in addition to triggerCharacters (PR #1066):
+  -- without this, the signature popup re-opens only when the cursor crosses
+  -- an opening-paren-style char but not on commas / closing parens that
+  -- merely move between params.
+  local sig_provider = client and client.server_capabilities.signatureHelpProvider or {}
+  ---@type string[]
+  local chars = {}
+  for _, c in ipairs(sig_provider.triggerCharacters or {}) do chars[#chars + 1] = c end
+  for _, c in ipairs(sig_provider.retriggerCharacters or {}) do chars[#chars + 1] = c end
+  if not (client and #chars > 0) then
     return
   end
   if vim.tbl_contains(chars, M.get_char(buf)) then
