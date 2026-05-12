@@ -177,9 +177,16 @@ function NotifyView:show()
   local todo = {}
 
   if self._opts.merge then
+    -- Pull title/level from the first message so nvim-notify renders
+    -- the merged toast with the correct severity (border color, icon).
+    -- Without these, a merged Error route entry falls back to the INFO
+    -- defaults and renders green instead of red.
+    local first = self._messages[1] or {}
     table.insert(todo, {
       content = self:content(),
       messages = self._messages,
+      title = first.opts and first.opts.title or nil,
+      level = first.level,
     })
   else
     for _, m in ipairs(self._messages) do
