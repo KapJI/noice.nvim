@@ -102,7 +102,16 @@ function M.opts(state)
           opts.position.col = 0
         end
 
-        if pos.screenpos.row == vim.go.lines then
+        -- Classic bottom-row "cmdline" view: anchor SW above the
+        -- cmdline. Upstream's auto-anchor only fires when the cmdline
+        -- popup is at the absolute last row (vim.go.lines), but the
+        -- classic view renders one row above that (vim.o.lines -
+        -- cmdheight), so without this branch the popupmenu mounts
+        -- below the cmdline and gets clipped.
+        if Config.options.cmdline.view == "cmdline" then
+          opts.position.row = vim.o.lines - vim.o.cmdheight - 1
+          opts.anchor = "SW"
+        elseif pos.screenpos.row == vim.go.lines then
           opts.position.row = opts.position.row - 1
           opts.anchor = "SW"
         end
