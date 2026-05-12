@@ -33,6 +33,16 @@ M.handle_confirm = vim.fn.has("nvim-0.11") == 1
 M.confirm_message = nil ---@type NoiceMessage?
 M._on_hide = nil ---@type fun()
 
+-- Confirm popup retry tracking. Vim's confirm() re-emits cmdline_show
+-- with the same prompt on every invalid keypress, without re-emitting
+-- the preceding msg_show kind=confirm. A naive "remove on _on_hide,
+-- fall through on the retry" approach destroys the popup and renders
+-- a bottom-row cmdline prompt. Defer Manager.remove via a generation
+-- counter — a retry bumps gen so the pending remove cancels itself
+-- and the popup stays visible across invalid keypresses.
+local _active_confirm = nil ---@type NoiceMessage?
+local _confirm_gen = 0
+
 ---@alias NoiceCmdlineFormatter fun(cmdline: NoiceCmdline): {icon?:string, offset?:number, view?:NoiceViewOptions}
 
 ---@class CmdlineState
@@ -190,16 +200,44 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
 
   if M.confirm_message then
     local message = M.confirm_message --[[@as NoiceMessage]]
+    -- Issue #1198: the confirm question and the [Y]es/(N)o/(C)ancel
+    -- prompt arrive without a newline separator, so without this they
+    -- collapse onto one line in the popup.
+    message:newline()
     message:append(prompt)
     M.confirm_message = nil
     Manager.add(message)
+    _active_confirm = message
+    -- Hide vim's cursor while the confirm popup is up. Otherwise vim's
+    -- cursor lands on the statusline (the cmdline row is reclaimed by
+    -- lualine), painting one cell with the cursor highlight.
+    Hacks.hide_cursor()
+    _confirm_gen = _confirm_gen + 1
+    local my_gen = _confirm_gen
     M._on_hide = function()
+      _confirm_gen = _confirm_gen + 1
+      local current_gen = _confirm_gen
       vim.schedule(function()
-        Manager.remove(message)
+        if current_gen == _confirm_gen then
+          -- Real dismissal: remove popup AND restore the cursor.
+          Manager.remove(message)
+          if _active_confirm == message then
+            _active_confirm = nil
+          end
+          Hacks.show_cursor()
+        end
       end)
     end
     return
   end
+
+  if _active_confirm and prompt ~= "" then
+    -- Retry from invalid keypress: bump gen to cancel any pending
+    -- deferred remove. Popup stays.
+    _confirm_gen = _confirm_gen + 1
+    return
+  end
+  _active_confirm = nil
 
   -- This was triggered by a force redraw, so skip it
   if c:get():find(Hacks.SPECIAL, 1, true) then
