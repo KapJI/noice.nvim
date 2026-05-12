@@ -111,6 +111,22 @@ function M.on_show(event, kind, content, replace_last)
   if kind == M.kinds.search_count then
     message = M.get(event, kind)
     Hacks.fix_nohlsearch()
+    -- Strip the `/pattern` tail from search_count content. Vim sends
+    -- "[1/12]/foo" but the pattern is already visible in the cmdline
+    -- view as the user types it; rendering it again as virtualtext
+    -- next to the cursor is redundant clutter.
+    if type(content) == "table" then
+      local full = ""
+      for _, c in ipairs(content) do
+        if type(c) == "table" and c[2] then
+          full = full .. c[2]
+        end
+      end
+      local stripped = full:match("(%[%d+/%d+%])")
+      if stripped then
+        content = { { 0, stripped } }
+      end
+    end
   else
     message = Message(event, kind)
     message.cmdline = Cmdline.active
