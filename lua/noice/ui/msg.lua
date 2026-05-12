@@ -31,6 +31,12 @@ M.kinds = {
   number_prompt = "number_prompt", -- |inputlist()| prompt for a number
   return_prompt = "return_prompt", -- |press-enter| prompt after a multiple messages
   list_cmd = "list_cmd", -- |:list| command
+  -- shell output (nvim 0.12+)
+  shell_out = "shell_out", -- |:!cmd| stdout
+  shell_err = "shell_err", -- |:!cmd| stderr
+  shell_ret = "shell_ret", -- |:!cmd| return code
+  -- buffer write (nvim 0.12+)
+  bufwrite = "bufwrite", -- |:w| / |:write| write report ("file Nl, Nb written")
   -- error/warnings
   emsg = "emsg", --  Error (|errors|, internal error, |:throw|, …)
   echoerr = "echoerr", -- |:echoerr| message
@@ -40,6 +46,7 @@ M.kinds = {
   -- hints
   quickfix = "quickfix", -- Quickfix navigation message
   search_count = "search_count", -- Search count message ("S" flag of 'shortmess')
+  search_cmd = "search_cmd", -- Search command echo (nvim 0.12+, for |/| typing display)
 }
 
 ---@type NoiceMessage
