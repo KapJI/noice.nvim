@@ -71,7 +71,7 @@ function M.defaults()
       filter = {
         any = {
           { event = { "msg_showmode", "msg_showcmd", "msg_ruler" } },
-          { event = "msg_show", kind = "search_count" },
+          { event = "msg_show", kind = { "search_count", "search_cmd" } },
         },
       },
       opts = { skip = true },
@@ -80,7 +80,7 @@ function M.defaults()
       view = Config.options.messages.view,
       filter = {
         event = "msg_show",
-        kind = { "", "echo", "echomsg", "lua_print", "list_cmd", "shell_out", "shell_err", "shell_ret", "bufwrite", "search_cmd" },
+        kind = { "", "echo", "echomsg", "lua_print", "list_cmd", "shell_out", "shell_err", "shell_ret", "bufwrite" },
       },
       opts = { replace = true, merge = true, title = "Messages" },
     },
